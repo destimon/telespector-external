@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 )
 
 type Connection struct {
@@ -16,6 +17,10 @@ type Connection struct {
 }
 
 var connections []Connection
+
+func enableCors(w *http.ResponseWriter) {
+	(*w).Header().Set("Access-Control-Allow-Origin", "*")
+}
 
 func getConnections(w http.ResponseWriter, r *http.Request) {
 
@@ -48,9 +53,15 @@ func createConnection(w http.ResponseWriter, r *http.Request) {
 func main() {
 	r := mux.NewRouter().StrictSlash(true)
 
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:3000"},
+		AllowCredentials: true,
+	})
+
 	r.HandleFunc("/connections", getConnections).Methods("GET")
 	r.HandleFunc("/connections/{id}", getConnection).Methods("GET")
 	r.HandleFunc("/connections", createConnection).Methods("POST")
 
-	log.Fatal(http.ListenAndServe(":8005", r))
+	handler := c.Handler(r)
+	log.Fatal(http.ListenAndServe(":8005", handler))
 }
