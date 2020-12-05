@@ -1,3 +1,4 @@
+
 package main
 
 import (
@@ -59,11 +60,11 @@ func main() {
 		}
 	}
 
-	// Main loop
-	for update := range client.RawUpdates {
+	// rawUpdates gets all updates comming from tdlib
+	rawUpdates := client.GetRawUpdatesChannel(100)
+	for update := range rawUpdates {
 		// Show all updates
 		fmt.Println(update.Data)
 		fmt.Print("\n\n")
 	}
-
 }
