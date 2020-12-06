@@ -3,9 +3,7 @@ package main
 import (
 	"encoding/json"
 	"log"
-	"math/rand"
 	"net/http"
-	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
@@ -23,7 +21,6 @@ func enableCors(w *http.ResponseWriter) {
 }
 
 func getConnections(w http.ResponseWriter, r *http.Request) {
-
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(connections)
 }
@@ -37,7 +34,8 @@ func getConnection(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	json.NewEncoder(w).Encode(&Connection{})
+
+	json.NewEncoder(w).Encode(nil)
 }
 
 func createConnection(w http.ResponseWriter, r *http.Request) {
@@ -45,9 +43,37 @@ func createConnection(w http.ResponseWriter, r *http.Request) {
 	var connection Connection
 
 	_ = json.NewDecoder(r.Body).Decode(&connection)
-	connection.ID = strconv.Itoa(rand.Intn(1000000))
 	connections = append(connections, connection)
 	json.NewEncoder(w).Encode(connection)
+}
+
+func updateConnection(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	params := mux.Vars(r)
+	for index, item := range connections {
+		if item.ID == params["id"] {
+			connections = append(connections[:index], connections[index+1:]...)
+			var connection Connection
+			_ = json.NewDecoder(r.Body).Decode(&connection)
+			connection.ID = params["id"]
+			connections = append(connections, connection)
+			json.NewEncoder(w).Encode(connection)
+			return
+		}
+	}
+	json.NewEncoder(w).Encode(connections)
+}
+
+func deleteConnection(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	params := mux.Vars(r)
+	for index, item := range connections {
+		if item.ID == params["id"] {
+			connections = append(connections[:index], connections[index+1:]...)
+			break
+		}
+	}
+	json.NewEncoder(w).Encode(connections)
 }
 
 func main() {
@@ -61,6 +87,8 @@ func main() {
 	r.HandleFunc("/connections", getConnections).Methods("GET")
 	r.HandleFunc("/connections/{id}", getConnection).Methods("GET")
 	r.HandleFunc("/connections", createConnection).Methods("POST")
+	r.HandleFunc("/connections/{id}", updateConnection).Methods("PUT")
+	r.HandleFunc("/connections/{id}", deleteConnection).Methods("DELETE")
 
 	handler := c.Handler(r)
 	log.Fatal(http.ListenAndServe(":8005", handler))
