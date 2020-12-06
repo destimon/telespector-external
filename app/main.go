@@ -16,10 +16,6 @@ type Connection struct {
 
 var connections []Connection
 
-func enableCors(w *http.ResponseWriter) {
-	(*w).Header().Set("Access-Control-Allow-Origin", "*")
-}
-
 func getConnections(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(connections)
@@ -78,18 +74,19 @@ func deleteConnection(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	r := mux.NewRouter().StrictSlash(true)
-
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000"},
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{http.MethodGet, http.MethodPost, http.MethodDelete, http.MethodPut},
 		AllowCredentials: true,
 	})
 
+	handler := c.Handler(r)
+
+	r.HandleFunc("/connections/{id}", deleteConnection).Methods("DELETE")
+	r.HandleFunc("/connections/{id}", updateConnection).Methods("PUT")
 	r.HandleFunc("/connections", getConnections).Methods("GET")
 	r.HandleFunc("/connections/{id}", getConnection).Methods("GET")
 	r.HandleFunc("/connections", createConnection).Methods("POST")
-	r.HandleFunc("/connections/{id}", updateConnection).Methods("PUT")
-	r.HandleFunc("/connections/{id}", deleteConnection).Methods("DELETE")
 
-	handler := c.Handler(r)
-	log.Fatal(http.ListenAndServe(":8005", handler))
+	log.Print(http.ListenAndServe(":8005", handler))
 }
